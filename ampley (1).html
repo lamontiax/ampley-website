@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ampley</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #ffffff;
+    --dim-green: #aaaaaa;
+    --black: #000000;
+    --dark: #050f05;
+  }
+
+  body {
+    background: var(--black);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: none;
+  }
+
+  /* Scanlines overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.15) 2px,
+      rgba(0,0,0,0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* CRT vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.85) 100%);
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  /* Matrix rain canvas */
+  #matrix {
+    position: fixed;
+    inset: 0;
+    opacity: 0.07;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 10;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  .logo {
+    font-family: 'VT323', monospace;
+    font-size: clamp(5rem, 15vw, 11rem);
+    letter-spacing: 0.15em;
+    line-height: 1;
+    color: var(--green);
+    text-shadow:
+      0 0 10px var(--green),
+      0 0 30px var(--green),
+      0 0 60px rgba(0,255,65,0.4);
+    animation: flicker 6s infinite;
+    position: relative;
+  }
+
+  .logo::after {
+    content: attr(data-text);
+    position: absolute;
+    left: 3px;
+    top: 0;
+    color: rgba(0,255,65,0.3);
+    clip-path: polygon(0 30%, 100% 30%, 100% 50%, 0 50%);
+    animation: glitch 4s infinite;
+    pointer-events: none;
+  }
+
+  .prompt {
+    font-size: clamp(0.8rem, 2vw, 1rem);
+    color: var(--dim-green);
+    margin-top: 0.5rem;
+    letter-spacing: 0.2em;
+    opacity: 0.6;
+  }
+
+  .coming-soon {
+    margin-top: 3rem;
+    font-size: clamp(1.2rem, 4vw, 2rem);
+    letter-spacing: 0.5em;
+    text-transform: uppercase;
+    position: relative;
+    display: inline-block;
+  }
+
+  .coming-soon::before {
+    content: '> ';
+    color: var(--dim-green);
+    opacity: 0.7;
+  }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 0.6em;
+    height: 1.1em;
+    background: var(--green);
+    vertical-align: middle;
+    margin-left: 0.2em;
+    animation: blink 1s step-end infinite;
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  .status-bar {
+    margin-top: 3rem;
+    font-size: 0.7rem;
+    color: var(--dim-green);
+    opacity: 0.5;
+    letter-spacing: 0.15em;
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .status-item {
+    position: relative;
+  }
+
+  .status-item::before {
+    content: '[';
+  }
+  .status-item::after {
+    content: ']';
+  }
+
+  .progress-line {
+    margin-top: 2rem;
+    width: 300px;
+    max-width: 80vw;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .progress-label {
+    font-size: 0.65rem;
+    color: var(--dim-green);
+    opacity: 0.5;
+    text-align: left;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.3rem;
+  }
+
+  .progress-track {
+    height: 2px;
+    background: rgba(0,255,65,0.1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    width: 0;
+    animation: load 3s ease-out 0.5s forwards;
+  }
+
+  /* Custom cursor */
+  .cursor {
+    position: fixed;
+    width: 20px;
+    height: 20px;
+    border: 1px solid var(--green);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 999;
+    transition: transform 0.1s ease;
+    box-shadow: 0 0 6px var(--green);
+  }
+  .cursor::before {
+    content: '+';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    color: var(--green);
+    line-height: 1;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  @keyframes flicker {
+    0%, 95%, 100% { opacity: 1; }
+    96% { opacity: 0.8; }
+    97% { opacity: 1; }
+    98% { opacity: 0.85; }
+    99% { opacity: 1; }
+  }
+
+  @keyframes glitch {
+    0%, 90%, 100% { transform: translate(0); opacity: 0; }
+    91% { transform: translate(-4px, 2px); opacity: 0.6; }
+    93% { transform: translate(4px, -2px); opacity: 0.4; }
+    95% { transform: translate(0); opacity: 0; }
+  }
+
+  @keyframes load {
+    0% { width: 0; }
+    100% { width: 73%; }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .container > * {
+    animation: fadeIn 0.8s ease backwards;
+  }
+  .logo { animation-delay: 0.1s; }
+  .prompt { animation-delay: 0.4s; }
+  .coming-soon { animation-delay: 0.8s; }
+  .progress-line { animation-delay: 1.2s; }
+  .status-bar { animation-delay: 1.6s; }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div class="cursor" id="cursor"></div>
+
+<div class="container">
+  <div class="logo" data-text="AMPLEY">AMPLEY</div>
+  <div class="prompt">// initializing...</div>
+
+  <div class="coming-soon">
+    Coming Soon<span class="cursor-blink"></span>
+  </div>
+
+  <div class="progress-line">
+    <div class="progress-label">BUILD PROGRESS //////</div>
+    <div class="progress-track">
+      <div class="progress-fill"></div>
+    </div>
+  </div>
+
+
+</div>
+
+<script>
+// Matrix rain
+const canvas = document.getElementById('matrix');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&<>{}[]01';
+const fontSize = 13;
+const cols = Math.floor(canvas.width / fontSize);
+const drops = Array(cols).fill(1);
+
+function drawMatrix() {
+  ctx.fillStyle = 'rgba(0,0,0,0.05)';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = fontSize + 'px Share Tech Mono, monospace';
+  drops.forEach((y, i) => {
+    const char = chars[Math.floor(Math.random() * chars.length)];
+    ctx.fillText(char, i * fontSize, y * fontSize);
+    if (y * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+    drops[i]++;
+  });
+}
+
+setInterval(drawMatrix, 50);
+
+// Custom cursor
+const cursor = document.getElementById('cursor');
+document.addEventListener('mousemove', e => {
+  cursor.style.left = e.clientX + 'px';
+  cursor.style.top = e.clientY + 'px';
+});
+
+// Resize
+window.addEventListener('resize', () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+</script>
+</body>
+</html>
